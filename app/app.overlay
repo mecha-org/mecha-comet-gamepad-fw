@@ -1,0 +1,22 @@
+/*
+ * Copyright (c) 2026 Mecha Systems
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+/ {
+	/* The HID gamepad. The report descriptor is in src/hid/gamepad_hid.c. */
+	hid_gamepad: hid-gamepad {
+		compatible = "zephyr,hid-device";
+		label = "Mecha Comet Gamepad Extension";
+		protocol-code = "none";
+		/* Must be at least GAMEPAD_HID_REPORT_SIZE. */
+		in-report-size = <11>;
+
+		/*
+		 * How often the host polls the gamepad. This also sets the fastest report rate, because a
+		 * report is sent when the host has read the previous one.
+		 */
+		in-polling-period-us = <4000>;
+	};
+};

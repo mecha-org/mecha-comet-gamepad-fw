@@ -1,0 +1,16 @@
+# Copyright (c) 2026 Mecha Systems
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Application Kconfig entry point. Browse options with `west build -t menuconfig`.
+# Every part of the firmware that has options keeps them in a Kconfig file next to its source.
+
+menu "Zephyr"
+source "Kconfig.zephyr"
+endmenu
+
+rsource "src/usb/Kconfig"
+rsource "src/status_led/Kconfig"
+
+module = COMET_GAMEPAD
+module-str = Comet Gamepad
+source "subsys/logging/Kconfig.template.log_config"

@@ -1,0 +1,26 @@
+# Copyright (c) 2026 Mecha Systems
+# SPDX-License-Identifier: BSD-3-Clause
+
+manifest:
+  remotes:
+    - name: zephyrproject-rtos
+      url-base: https://github.com/zephyrproject-rtos
+    - name: mecha-org
+      url-base: https://github.com/mecha-org
+  projects:
+    - name: zephyr
+      remote: zephyrproject-rtos
+      revision: v4.5.0
+      import:
+        # Only the modules this firmware needs.
+        name-allowlist:
+          - cmsis_6
+          - hal_nxp
+    # Pinned to a commit until Pivot Pip has a release tag. Use the tag then.
+    - name: mecha-pivot-pip
+      remote: mecha-org
+      repo-path: mecha-pivot-pip-zephyr
+      revision: 1972e2e27f84f06e5477e9116dbefb7d55101b57
+      path: modules/lib/mecha-pivot-pip
+  self:
+    path: mecha-comet-gamepad-fw

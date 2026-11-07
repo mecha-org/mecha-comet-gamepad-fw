@@ -1,0 +1,29 @@
+name: Bug report
+description: Something does not work as described.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Firmware version
+      description: The release tag, or the commit if you built it yourself.
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Host
+      description: What the gamepad is connected to, for example the Mecha Comet or Windows 11.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Output of the debug console (UART), if you have it.
+      render: shell

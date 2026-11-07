@@ -1,0 +1,20 @@
+# Copyright (c) 2026 Mecha Systems
+# SPDX-License-Identifier: BSD-3-Clause
+
+identifier: mecha_comet_gamepad
+name: Mecha Comet Gamepad Extension
+type: mcu
+arch: arm
+ram: 32
+flash: 128
+toolchain:
+  - zephyr
+  - gnuarmemb
+supported:
+  - adc
+  - gpio
+  - i2c
+  - uart
+  - usb_device
+  - usbd
+vendor: mecha

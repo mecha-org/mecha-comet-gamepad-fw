@@ -1,0 +1,36 @@
+# Copyright (c) 2026 Mecha Systems
+# SPDX-License-Identifier: BSD-3-Clause
+
+config COMET_GAMEPAD_USB_VID
+	hex "USB vendor ID"
+	default 0x1209
+	help
+	  The default is the vendor ID that pid.codes shares between open source hardware
+	  projects. Replace it if Mecha gets a vendor ID of its own.
+
+config COMET_GAMEPAD_USB_PID
+	hex "USB product ID"
+	default 0x0001
+	help
+	  The default is the pid.codes test product ID. Replace it with the product ID that
+	  pid.codes allocates for the gamepad before shipping.
+
+config COMET_GAMEPAD_USB_MANUFACTURER
+	string "USB manufacturer string"
+	default "Mecha Systems"
+	help
+	  Manufacturer name that the host shows, for example in the output of lsusb.
+
+config COMET_GAMEPAD_USB_PRODUCT
+	string "USB product string"
+	default "Comet Gamepad Extension"
+	help
+	  Product name that the host shows, for example in the output of lsusb.
+
+config COMET_GAMEPAD_USB_MAX_POWER
+	int "USB maximum power draw in units of 2 mA"
+	default 50
+	range 0 250
+	help
+	  Current the gamepad tells the host it may draw from the USB bus. The default of 50
+	  is 100 mA.

@@ -1,0 +1,337 @@
+/*
+ * Copyright (c) 2026 Mecha Systems
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+/dts-v1/;
+
+#include <nxp/mcx/mcxc/nxp_mcxc243.dtsi>
+#include "mecha_comet_gamepad-pinctrl.dtsi"
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
+/ {
+	model = "Mecha Comet Gamepad Extension";
+	compatible = "mecha,comet-gamepad", "nxp,mcxc243", "nxp,mcx";
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,console = &lpuart0;
+		zephyr,shell-uart = &lpuart0;
+		zephyr,code-partition = &code_partition;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		/* LED1 through 4.7k to GND (net LED_1). */
+		status_led: led-status {
+			gpios = <&gpioe 30 GPIO_ACTIVE_HIGH>;
+			label = "Status LED";
+		};
+	};
+
+	/*
+	 * One node per schematic net (btn_1 to btn_14). The key code says which
+	 * control the button is: the face buttons by their position (south is the
+	 * bottom one), the others by their function. The firmware turns these into
+	 * gamepad buttons, so what a button does can change without touching this file.
+	 *
+	 * The chip has two GPIO interrupt vectors: one for port A and one shared by
+	 * ports C and D. Ports B and E have none. Zephyr's chip devicetree only
+	 * connects the port A and port C interrupts, so the port C buttons are
+	 * interrupt driven and the ones on ports B and D are polled.
+	 *
+	 * Note for the next PCB revision: route all buttons to ports C and D (the
+	 * port A pins are used by SWD, UART, the crystal, boot and reset) so they can
+	 * all be interrupt driven. This also needs the port D interrupt to be
+	 * connected in Zephyr.
+	 */
+	buttons_irq: buttons-irq {
+		compatible = "gpio-keys";
+		debounce-interval-ms = <5>;
+
+		btn_3: button-3 {
+			gpios = <&gpioc 0 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <INPUT_BTN_DPAD_DOWN>;
+			label = "BTN3 (PTC0)";
+		};
+
+		btn_4: button-4 {
+			gpios = <&gpioc 1 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <INPUT_BTN_DPAD_RIGHT>;
+			label = "BTN4 (PTC1)";
+		};
+
+		btn_5: button-5 {
+			gpios = <&gpioc 2 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <INPUT_BTN_NORTH>;
+			label = "BTN5 (PTC2)";
+		};
+
+		btn_6: button-6 {
+			gpios = <&gpioc 3 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <INPUT_BTN_WEST>;
+			label = "BTN6 (PTC3)";
+		};
+
+		btn_7: button-7 {
+			gpios = <&gpioc 4 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <INPUT_BTN_SOUTH>;
+			label = "BTN7 (PTC4)";
+		};
+
+		btn_8: button-8 {
+			gpios = <&gpioc 5 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <INPUT_BTN_EAST>;
+			label = "BTN8 (PTC5)";
+		};
+
+		btn_9: button-9 {
+			gpios = <&gpioc 6 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <INPUT_BTN_SELECT>;
+			label = "BTN9 (PTC6)";
+		};
+
+		btn_10: button-10 {
+			gpios = <&gpioc 7 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <INPUT_BTN_START>;
+			label = "BTN10 (PTC7)";
+		};
+	};
+
+	buttons_polled: buttons-polled {
+		compatible = "gpio-keys";
+		polling-mode;
+		debounce-interval-ms = <5>;
+
+		btn_1: button-1 {
+			gpios = <&gpiob 16 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <INPUT_BTN_DPAD_UP>;
+			label = "BTN1 (PTB16)";
+		};
+
+		btn_2: button-2 {
+			gpios = <&gpiob 17 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <INPUT_BTN_DPAD_LEFT>;
+			label = "BTN2 (PTB17)";
+		};
+
+		btn_11: button-11 {
+			gpios = <&gpiod 0 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <INPUT_BTN_TL>;
+			label = "BTN11 (PTD0)";
+		};
+
+		btn_12: button-12 {
+			gpios = <&gpiod 1 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <INPUT_BTN_TR>;
+			label = "BTN12 (PTD1)";
+		};
+
+		/* Left stick click: pulled up to 3V3 (R17), so active low. */
+		btn_13: button-13 {
+			gpios = <&gpiod 2 GPIO_ACTIVE_LOW>;
+			zephyr,code = <INPUT_BTN_THUMBL>;
+			label = "BTN13 (PTD2)";
+		};
+
+		btn_14: button-14 {
+			gpios = <&gpiod 3 GPIO_ACTIVE_HIGH>;
+			zephyr,code = <INPUT_BTN_MODE>;
+			label = "BTN14 (PTD3)";
+		};
+	};
+
+	/*
+	 * Left stick: joystick U5 on ADC0 channels 8 and 9. The nodes are named after the axis they
+	 * report, as in Zephyr's analog-axis binding. The stick is turned by 90 degrees on the board:
+	 * channel 8 is the vertical axis (Y, reads higher when pushed up) and channel 9 is the
+	 * horizontal axis (X, reads higher when pushed right).
+	 *
+	 * The axes must be listed in order of increasing ADC channel, because the driver reads all of
+	 * them in one go and the ADC returns the samples in that order. That is why Y comes first.
+	 *
+	 * The in-* values are raw 12-bit counts and only starting values: calibration changes them
+	 * at runtime.
+	 */
+	left_stick: left-stick {
+		compatible = "analog-axis";
+		poll-period-ms = <4>;
+
+		axis-y {
+			io-channels = <&adc0 8>;
+			zephyr,axis = <INPUT_ABS_Y>;
+			in-min = <586>;
+			in-max = <3604>;
+			in-deadzone = <75>;
+			out-min = <(-32767)>;
+			out-max = <32767>;
+		};
+
+		axis-x {
+			io-channels = <&adc0 9>;
+			zephyr,axis = <INPUT_ABS_X>;
+			in-min = <701>;
+			in-max = <3635>;
+			in-deadzone = <60>;
+			out-min = <(-32767)>;
+			out-max = <32767>;
+		};
+	};
+
+	/*
+	 * Pivot Pip, the pointing stick (U6), read through two channels of the ADS1115: X on AIN0 and
+	 * Y on AIN1. It is the right stick of the gamepad, so it reports absolute axes. The driver is
+	 * in the mecha-pivot-pip module.
+	 */
+	pivot_pip: pivot-pip {
+		compatible = "mecha,pivot-pip";
+		io-channels = <&ads1115 0>, <&ads1115 1>;
+		io-channel-names = "x", "y";
+		full-scale = <80>;
+		mode = "absolute";
+		abs-codes = <INPUT_ABS_RX INPUT_ABS_RY>;
+		inverted-y;
+	};
+};
+
+/* Peripheral clock source selection, same as NXP's FRDM board. */
+&sim {
+	pllfll-select = <KINETIS_SIM_PLLFLLSEL_MCGPLLCLK>;
+	er32k-select = <KINETIS_SIM_ER32KSEL_OSC32KCLK>;
+};
+
+/* The core runs from the internal 48 MHz oscillator. */
+&cpu0 {
+	clock-frequency = <DT_FREQ_M(48)>;
+};
+
+/* 32.768 kHz crystal (U2); the 12 pF load capacitors are on the PCB. */
+&osc {
+	clock-frequency = <32768>;
+	mode = "low-power";
+};
+
+&gpiob {
+	status = "okay";
+};
+
+&gpioc {
+	status = "okay";
+};
+
+&gpiod {
+	status = "okay";
+};
+
+&gpioe {
+	status = "okay";
+};
+
+&lpuart0 {
+	current-speed = <115200>;
+	pinctrl-0 = <&lpuart0_default>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&adc0 {
+	pinctrl-0 = <&adc0_default>;
+	pinctrl-names = "default";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	/* The reference is VREFH/VREFL, which the PCB ties to VDDA/VSSA. */
+	channel@8 {
+		reg = <8>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+
+		/* Average 16 readings per sample to reduce noise. */
+		zephyr,oversampling = <4>;
+	};
+
+	channel@9 {
+		reg = <9>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+
+		/* Average 16 readings per sample to reduce noise. */
+		zephyr,oversampling = <4>;
+	};
+};
+
+&i2c0 {
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-names = "default";
+	status = "okay";
+
+	/* Pivot Pip ADC. The address pin is tied to GND (0x48) and ALERT/RDY is not connected. */
+	ads1115: adc@48 {
+		compatible = "ti,ads1115";
+		reg = <0x48>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		#io-channel-cells = <1>;
+
+		/* ADC_GAIN_1 is a full scale of 2.048 V. Single-ended inputs use 15 of the 16 bits. */
+
+		/* X axis: AIN0 */
+		channel@0 {
+			reg = <0>;
+			zephyr,gain = "ADC_GAIN_1";
+			zephyr,reference = "ADC_REF_INTERNAL";
+			zephyr,vref-mv = <2048>;
+			zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+			zephyr,input-positive = <0>;
+			zephyr,resolution = <15>;
+		};
+
+		/* Y axis: AIN1 */
+		channel@1 {
+			reg = <1>;
+			zephyr,gain = "ADC_GAIN_1";
+			zephyr,reference = "ADC_REF_INTERNAL";
+			zephyr,vref-mv = <2048>;
+			zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+			zephyr,input-positive = <1>;
+			zephyr,resolution = <15>;
+		};
+	};
+};
+
+/* Define the memory layout for the 128 KB flash */
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		code_partition: partition@0 {
+			compatible = "zephyr,mapped-partition";
+			label = "code";
+			reg = <0x00000000 DT_SIZE_K(120)>;
+		};
+
+		storage_partition: partition@1e000 {
+			compatible = "zephyr,mapped-partition";
+			label = "storage";
+			reg = <0x0001e000 DT_SIZE_K(8)>;
+		};
+	};
+};
+
+/* VREGIN is tied to 3V3 and VOUT33 is open, so the USB regulator is not used. */
+zephyr_udc0: &usb {
+	num-bidir-endpoints = <8>;
+	no-voltage-regulator;
+	status = "okay";
+};

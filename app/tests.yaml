@@ -1,0 +1,21 @@
+# Copyright (c) 2026 Mecha Systems
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Lets Twister build the firmware: "west twister -T app --integration".
+sample:
+  name: Mecha Comet Gamepad firmware
+common:
+  build_only: true
+  platform_allow:
+    - mecha_comet_gamepad
+  integration_platforms:
+    - mecha_comet_gamepad
+tests:
+  app.default: {}
+  app.no_pivot_pip:
+    extra_args: SNIPPET=no-pivot-pip
+  app.no_left_stick:
+    extra_args: SNIPPET=no-left-stick
+  app.debug:
+    extra_overlay_confs:
+      - debug.conf

@@ -1,0 +1,128 @@
+From 0b07590b00ea4e0bd7a5bc5045e82c39a8f1823e Mon Sep 17 00:00:00 2001
+From: Shubham Patel <shubham0x13@gmail.com>
+Date: Mon, 12 Oct 2026 16:43:03 +0530
+Subject: [PATCH] soc: nxp: mcxc: add MCXC243 SoC support
+
+Add the MCXC243 (MCXC243VFT, 48QFN) to the MCX C family. It has 128 KB
+flash, 32 KB SRAM, a DAC and an I2S module, and no CRC module, so the
+new dtsi overrides the memory nodes and deletes the crc node. The NXP
+HAL already provides the device files and pin control header.
+
+Tested by building and flashing a GPIO blink application on an
+out-of-tree MCXC243VFT board. Flash size (128 KiB) and RAM (32 KiB at
+0x1fffe000) were also read back from the chip's ROM bootloader.
+
+Signed-off-by: Shubham Patel <shubham0x13@gmail.com>
+---
+ dts/arm/nxp/mcx/mcxc/nxp_mcxc243.dtsi | 30 +++++++++++++++++++++++++++
+ soc/nxp/mcx/mcxc/Kconfig.soc          |  9 ++++++++
+ soc/nxp/mcx/soc.yml                   |  5 +++++
+ 3 files changed, 44 insertions(+)
+ create mode 100644 dts/arm/nxp/mcx/mcxc/nxp_mcxc243.dtsi
+
+diff --git a/dts/arm/nxp/mcx/mcxc/nxp_mcxc243.dtsi b/dts/arm/nxp/mcx/mcxc/nxp_mcxc243.dtsi
+new file mode 100644
+index 00000000000..f375fb91dad
+--- /dev/null
++++ b/dts/arm/nxp/mcx/mcxc/nxp_mcxc243.dtsi
+@@ -0,0 +1,30 @@
++/*
++ * Copyright The Zephyr Project Contributors
++ *
++ * SPDX-License-Identifier: Apache-2.0
++ */
++
++/*
++ * MCXC243: 128 KB flash, 32 KB SRAM (MCX C143/144/243/244/443/444 data sheet,
++ * Rev. 5, Table 1). Unlike the MCXC242 it has a DAC and an I2S module, but no
++ * CRC module, and it has an on-chip USB voltage regulator.
++ */
++
++#include <nxp/mcx/mcxc/nxp_mcxc_common.dtsi>
++
++/delete-node/ &sram0;
++
++/ {
++	sram0: memory@1fffe000 {
++		compatible = "mmio-sram";
++		reg = <0x1fffe000 DT_SIZE_K(32)>;
++	};
++};
++
++&flash0 {
++	reg = <0 DT_SIZE_K(128)>;
++	ranges = <0x0 0x0 DT_SIZE_K(128)>;
++};
++
++/* The MCXC243 HAL does not provide a CRC peripheral. */
++/delete-node/ &crc;
+diff --git a/soc/nxp/mcx/mcxc/Kconfig.soc b/soc/nxp/mcx/mcxc/Kconfig.soc
+index f95880c33dd..a0af8091696 100644
+--- a/soc/nxp/mcx/mcxc/Kconfig.soc
++++ b/soc/nxp/mcx/mcxc/Kconfig.soc
+@@ -19,6 +19,10 @@ config SOC_MCXC242
+ 	bool
+ 	select SOC_FAMILY_MCXC
+ 
++config SOC_MCXC243
++	bool
++	select SOC_FAMILY_MCXC
++
+ config SOC_MCXC444
+ 	bool
+ 	select SOC_FAMILY_MCXC
+@@ -27,6 +31,7 @@ config SOC
+ 	default "mcxc141" if SOC_MCXC141
+ 	default "mcxc142" if SOC_MCXC142
+ 	default "mcxc242" if SOC_MCXC242
++	default "mcxc243" if SOC_MCXC243
+ 	default "mcxc444" if SOC_MCXC444
+ 
+ config SOC_PART_NUMBER_MCXC141VLH
+@@ -44,6 +49,9 @@ config SOC_PART_NUMBER_MCXC242VLH
+ config SOC_PART_NUMBER_MCXC242VFM
+ 	bool
+ 
++config SOC_PART_NUMBER_MCXC243VFT
++	bool
++
+ config SOC_PART_NUMBER_MCXC444VLH
+ 	bool
+ 
+@@ -56,5 +64,6 @@ config SOC_PART_NUMBER
+ 	default "MCXC142VFM" if SOC_PART_NUMBER_MCXC142VFM
+ 	default "MCXC242VLH" if SOC_PART_NUMBER_MCXC242VLH
+ 	default "MCXC242VFM" if SOC_PART_NUMBER_MCXC242VFM
++	default "MCXC243VFT" if SOC_PART_NUMBER_MCXC243VFT
+ 	default "MCXC444VLH" if SOC_PART_NUMBER_MCXC444VLH
+ 	default "MCXC444VMP" if SOC_PART_NUMBER_MCXC444VMP
+diff --git a/soc/nxp/mcx/soc.yml b/soc/nxp/mcx/soc.yml
+index 977a3a91e9b..b6825395c9a 100644
+--- a/soc/nxp/mcx/soc.yml
++++ b/soc/nxp/mcx/soc.yml
+@@ -24,6 +24,7 @@ family:
+   - name: mcxc141
+   - name: mcxc142
+   - name: mcxc242
++  - name: mcxc243
+   - name: mcxc444
+ - name: mcxe
+   series:
+@@ -125,6 +126,8 @@ runners:
+         - mcxc142
+       - qualifiers:
+         - mcxc242
++      - qualifiers:
++        - mcxc243
+       - qualifiers:
+         - mcxc444
+       - qualifiers:
+@@ -223,6 +226,8 @@ runners:
+         - mcxc142
+       - qualifiers:
+         - mcxc242
++      - qualifiers:
++        - mcxc243
+       - qualifiers:
+         - mcxc444
+       - qualifiers:

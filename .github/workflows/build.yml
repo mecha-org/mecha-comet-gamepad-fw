@@ -1,0 +1,86 @@
+# Copyright (c) 2026 Mecha Systems
+# SPDX-License-Identifier: BSD-3-Clause
+
+name: Build
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+jobs:
+  build:
+    name: Build the firmware
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: mecha-comet-gamepad-fw
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: 3.12
+
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@be8136a8bba01580485d98b7ad2d32477c36a49a # v1.0.15
+        with:
+          app-path: mecha-comet-gamepad-fw
+          toolchains: arm-zephyr-eabi
+          ccache-cache-key: gamepad
+
+      - name: Apply patches
+        working-directory: mecha-comet-gamepad-fw
+        run: |
+          west patch clean
+          west patch apply
+
+      - name: Build all variants
+        working-directory: mecha-comet-gamepad-fw
+        run: west twister -T app -v --inline-logs --integration
+
+      - name: Build the firmware image
+        working-directory: mecha-comet-gamepad-fw
+        run: |
+          west build -b mecha_comet_gamepad app -d build
+          mkdir -p ../artifacts
+          cp build/zephyr/zephyr.bin ../artifacts/mecha_comet_gamepad.bin
+
+      - name: Archive
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: artifact-mecha_comet_gamepad
+          path: artifacts
+
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    name: Create draft release
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Download firmware
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: artifact-*
+          merge-multiple: true
+          path: firmware
+
+      - name: Create draft release
+        run: |
+          cd firmware
+          for f in *.bin; do mv -- "$f" "${f%.bin}-${GITHUB_REF_NAME}.bin"; done
+          sha256sum -- * > SHA256SUMS
+          gh release create "${GITHUB_REF_NAME}" --draft --verify-tag --generate-notes -- *

@@ -1,0 +1,10 @@
+# Copyright (c) 2026 Mecha Systems
+# SPDX-License-Identifier: BSD-3-Clause
+
+config COMET_GAMEPAD_STATUS_LED
+	bool "Blink the status LED"
+	default y
+	depends on $(dt_nodelabel_enabled,status_led)
+	help
+	  Blink the status LED on the board while the firmware runs. Turn this off in a
+	  release build: the case may hide the LED and the LED draws current.
