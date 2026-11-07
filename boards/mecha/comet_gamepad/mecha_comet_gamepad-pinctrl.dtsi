@@ -1,0 +1,40 @@
+/*
+ * Copyright (c) 2026 Mecha Systems
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+#include <nxp/mcx/mcxc/pinctrl/MCXC243VFT-pinctrl.h>
+
+&pinctrl {
+	/* Left stick: PTB0 = ADC0_SE8, PTB1 = ADC0_SE9. */
+	adc0_default: adc0-default {
+		group0 {
+			pinmux = <ADC0_SE8_PTB0>,
+				 <ADC0_SE9_PTB1>;
+			drive-strength = "low";
+			slew-rate = "slow";
+		};
+	};
+
+	/* Pivot Pip ADC (ADS1115): PTE24 = SCL, PTE25 = SDA. */
+	i2c0_default: i2c0-default {
+		group0 {
+			pinmux = <I2C0_SCL_PTE24>,
+				 <I2C0_SDA_PTE25>;
+			drive-strength = "low";
+			drive-open-drain;
+			slew-rate = "fast";
+		};
+	};
+
+	/* Debug console on the programming pads: PTA1 = RX, PTA2 = TX. */
+	lpuart0_default: lpuart0-default {
+		group0 {
+			pinmux = <LPUART0_RX_PTA1>,
+				 <LPUART0_TX_PTA2>;
+			drive-strength = "low";
+			slew-rate = "slow";
+		};
+	};
+};

@@ -1,0 +1,6 @@
+# Copyright (c) 2026 Mecha Systems
+# SPDX-License-Identifier: BSD-3-Clause
+
+config BOARD_MECHA_COMET_GAMEPAD
+	select SOC_MCXC243
+	select SOC_PART_NUMBER_MCXC243VFT

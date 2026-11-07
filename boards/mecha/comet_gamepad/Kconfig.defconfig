@@ -1,0 +1,11 @@
+# Copyright (c) 2026 Mecha Systems
+# SPDX-License-Identifier: BSD-3-Clause
+
+if BOARD_MECHA_COMET_GAMEPAD
+
+# The MCX C start-up code only disables the COP watchdog when this is set.
+# Without it nothing feeds the watchdog and the chip resets.
+config WDT_DISABLE_AT_BOOT
+	default y
+
+endif # BOARD_MECHA_COMET_GAMEPAD
